@@ -6,4 +6,4 @@ dependencyResolutionManagement {
     }
 }
 
-include("handler-api", "core", "cli")
+include("handler-api", "core", "handlers", "cli")
