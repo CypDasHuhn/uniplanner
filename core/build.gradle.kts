@@ -1,13 +1,21 @@
 plugins {
-    kotlin("jvm")
-    `java-library`
+    kotlin("multiplatform")
 }
 
 kotlin {
     jvmToolchain(21)
-}
 
-dependencies {
-    api(project(":handler-api"))
-    testImplementation(kotlin("test"))
+    jvm()
+    js {
+        nodejs()
+    }
+
+    sourceSets {
+        commonMain.dependencies {
+            api(project(":handler-api"))
+        }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
+    }
 }

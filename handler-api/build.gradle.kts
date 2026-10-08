@@ -1,13 +1,18 @@
 plugins {
-    kotlin("jvm")
-    `java-library`
+    kotlin("multiplatform")
 }
 
 kotlin {
     jvmToolchain(21)
-}
 
-dependencies {
-    api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
-    testImplementation(kotlin("test"))
+    jvm()
+    js {
+        nodejs()
+    }
+
+    sourceSets {
+        commonMain.dependencies {
+            api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+        }
+    }
 }
