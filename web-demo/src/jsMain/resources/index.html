@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>UniPlanner JS spike</title>
+    <style>
+        body { font-family: monospace; margin: 2rem; max-width: 60rem; }
+        pre { background: #f4f4f4; padding: 1rem; }
+        textarea { width: 100%; }
+        button { margin-right: 0.5rem; }
+        .ok { color: #0a7a0a; }
+        .error { color: #b00020; }
+    </style>
+</head>
+<body>
+<h1>UniPlanner mutation spike</h1>
+<p>Send a mutation request; the resolved promise carries the new document state.</p>
+
+<textarea id="request" rows="6">{"requester":"dayplanner","mutations":[{"field":"std.status.closed","value":true}]}</textarea>
+<div>
+    <button id="close">Preset: close task</button>
+    <button id="illegal">Preset: illegal write</button>
+    <button id="send">Send</button>
+    <button id="reset">Reset</button>
+</div>
+<p id="status"></p>
+
+<h2>Document</h2>
+<pre id="document"></pre>
+
+<script src="demo.js"></script>
+<script>
+    window.addEventListener("load", () => {
+        const api = window.uniplannerDemo;
+        const request = document.getElementById("request");
+        const status = document.getElementById("status");
+        const output = document.getElementById("document");
+
+        const render = (json) => {
+            output.textContent = JSON.stringify(JSON.parse(json), null, 2);
+        };
+        const succeed = (message) => {
+            status.className = "ok";
+            status.textContent = message;
+        };
+        const fail = (reason) => {
+            status.className = "error";
+            status.textContent = "rejected: " + (reason && reason.message ? reason.message : reason);
+        };
+
+        document.getElementById("close").onclick = () => {
+            request.value = JSON.stringify({
+                requester: "dayplanner",
+                mutations: [{ field: "std.status.closed", value: true }],
+            });
+        };
+        document.getElementById("illegal").onclick = () => {
+            request.value = JSON.stringify({
+                requester: "gantt",
+                mutations: [{ field: "dayplanner.day", value: "2026-04-11" }],
+            });
+        };
+        document.getElementById("send").onclick = () => {
+            api.requestMutation(request.value)
+                .then((document) => {
+                    render(document);
+                    succeed("resolved");
+                })
+                .catch(fail);
+        };
+        document.getElementById("reset").onclick = () => {
+            render(api.resetDocument());
+            succeed("reset");
+        };
+
+        render(api.currentDocument());
+    });
+</script>
+</body>
+</html>
