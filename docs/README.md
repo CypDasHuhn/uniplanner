@@ -8,10 +8,18 @@ UniPlanner is a view-agnostic, open planning protocol for tasks and projects. To
 - `reviews/` — review reports per ticket
 - `manual-test.md` — acceptance criteria that cannot be automated
 
-## Current goal
+## Current state
 
-A Kotlin/JVM Core v1: `.upl.json` read/write, a mutation gatekeeper with ownership checks, transitive handler dispatch and loop detection, and an in-process handler SPI. WASM handler hosting is a later layer behind the same interface.
+Core v1 works: `.upl.json` read/write with `task`/`workspace` kinds, prefix-based ownership and subscription with group-key rejection, no-op suppression, `(handler, field)` cycle detection, and three built-in handlers:
 
-Out of scope for now: the WASM registry and ABI, conflict resolution for bidirectional dependencies, and any view/tool implementation.
+- `kanban` — columns, ordering, board config in `kanban.columns`, close/reopen propagation
+- `dayplanner` — week placement per day, cleared when the task closes
+- `gantt` — `std.time.start`/`duration` canonical, `end` derived
+
+Handler SPI is in-process (`ServiceLoader` for externals); WASM hosting is a later layer behind the same interface.
+
+Next candidates: multi-document transactions (workspace ↔ tasks), `std.relations` dependency scheduling and `gantt.float`, handler registry/versioning.
+
+Out of scope for now: the WASM registry and ABI, richer conflict resolution.
 
 Design and task breakdown are produced by `architect`; tickets are written by `scribe`; implementation by `coder`.
