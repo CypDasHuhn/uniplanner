@@ -20,12 +20,13 @@ class BuiltinHandlersTest {
 
     @Test
     fun `closing a task propagates to kanban and dayplanner`() {
-        val document = task(
-            KanbanFields.column to JsonPrimitive("doing"),
-            KanbanFields.order to JsonPrimitive("m"),
-            DayplannerFields.day to JsonPrimitive("2026-04-08"),
-            DayplannerFields.order to JsonPrimitive("m"),
-        )
+        val document =
+            task(
+                KanbanFields.column to JsonPrimitive("doing"),
+                KanbanFields.order to JsonPrimitive("m"),
+                DayplannerFields.day to JsonPrimitive("2026-04-08"),
+                DayplannerFields.order to JsonPrimitive("m"),
+            )
         val gatekeeper = Gatekeeper(HandlerRegistry(BuiltinHandlers.all()))
 
         val result = gatekeeper.apply(document, MutationRequest("kanban", listOf(Mutation(Std.statusClosed, JsonPrimitive(true)))))

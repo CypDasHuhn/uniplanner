@@ -26,28 +26,40 @@ class KanbanHandler : Handler {
 
     override fun subscribedFields(): Set<FieldKey> = setOf(KanbanFields.column, Std.statusClosed)
 
-    override fun onFieldChanged(change: FieldChange, document: DocumentView): List<Mutation> = when (change.field) {
-        KanbanFields.column -> columnChanged(change, document)
-        Std.statusClosed -> closedChanged(change, document)
-        else -> emptyList()
-    }
+    override fun onFieldChanged(
+        change: FieldChange,
+        document: DocumentView,
+    ): List<Mutation> =
+        when (change.field) {
+            KanbanFields.column -> columnChanged(change, document)
+            Std.statusClosed -> closedChanged(change, document)
+            else -> emptyList()
+        }
 
-    private fun columnChanged(change: FieldChange, document: DocumentView): List<Mutation> {
+    private fun columnChanged(
+        change: FieldChange,
+        document: DocumentView,
+    ): List<Mutation> {
         val mutations = mutableListOf(Mutation(KanbanFields.order, null))
         val column = change.newValue.textOrNull()
         val wasDone = change.oldValue.textOrNull() == DONE
 
         when {
-            column == DONE && document.booleanOrNull(Std.statusClosed) != true ->
+            column == DONE && document.booleanOrNull(Std.statusClosed) != true -> {
                 mutations += Mutation(Std.statusClosed, JsonPrimitive(true))
+            }
 
-            wasDone && column != DONE && document.booleanOrNull(Std.statusClosed) != false ->
+            wasDone && column != DONE && document.booleanOrNull(Std.statusClosed) != false -> {
                 mutations += Mutation(Std.statusClosed, JsonPrimitive(false))
+            }
         }
         return mutations
     }
 
-    private fun closedChanged(change: FieldChange, document: DocumentView): List<Mutation> {
+    private fun closedChanged(
+        change: FieldChange,
+        document: DocumentView,
+    ): List<Mutation> {
         val closed = change.newValue.booleanOrNull()
         val column = document.textOrNull(KanbanFields.column)
 

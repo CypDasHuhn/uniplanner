@@ -59,18 +59,20 @@ class HandlerRegistryTest {
 
     @Test
     fun `subscribes a handler once when group and leaf both match`() {
-        val registry = HandlerRegistry(
-            listOf(StubHandler("gantt", subscribed = setOf(FieldKey("std.time"), FieldKey("std.time.start")))),
-        )
+        val registry =
+            HandlerRegistry(
+                listOf(StubHandler("gantt", subscribed = setOf(FieldKey("std.time"), FieldKey("std.time.start")))),
+            )
 
         assertEquals(1, registry.subscribersOf(FieldKey("std.time.start")).size)
     }
 
     @Test
     fun `detects group keys from declared owned and subscribed descendants`() {
-        val registry = HandlerRegistry(
-            listOf(StubHandler("gantt", owned = setOf(FieldKey("std.time.start")), subscribed = setOf(FieldKey("std.status.closed")))),
-        )
+        val registry =
+            HandlerRegistry(
+                listOf(StubHandler("gantt", owned = setOf(FieldKey("std.time.start")), subscribed = setOf(FieldKey("std.status.closed")))),
+            )
 
         assertTrue(registry.isGroupKey(FieldKey("std.time")))
         assertTrue(registry.isGroupKey(FieldKey("std.status")))
@@ -89,5 +91,8 @@ private class StubHandler(
 
     override fun subscribedFields(): Set<FieldKey> = subscribed
 
-    override fun onFieldChanged(change: FieldChange, document: DocumentView): List<Mutation> = emptyList()
+    override fun onFieldChanged(
+        change: FieldChange,
+        document: DocumentView,
+    ): List<Mutation> = emptyList()
 }

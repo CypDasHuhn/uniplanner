@@ -13,10 +13,11 @@ import kotlin.test.assertTrue
 class DayplannerHandlerTest {
     @Test
     fun `closing clears the day and order`() {
-        val document = task(
-            DayplannerFields.day to JsonPrimitive("2026-04-08"),
-            DayplannerFields.order to JsonPrimitive("m"),
-        )
+        val document =
+            task(
+                DayplannerFields.day to JsonPrimitive("2026-04-08"),
+                DayplannerFields.order to JsonPrimitive("m"),
+            )
 
         val applied = apply(DayplannerHandler(), document, Mutation(Std.statusClosed, JsonPrimitive(true))).applied()
 
@@ -35,10 +36,11 @@ class DayplannerHandlerTest {
 
     @Test
     fun `changing the day clears order`() {
-        val document = task(
-            DayplannerFields.day to JsonPrimitive("2026-04-08"),
-            DayplannerFields.order to JsonPrimitive("m"),
-        )
+        val document =
+            task(
+                DayplannerFields.day to JsonPrimitive("2026-04-08"),
+                DayplannerFields.order to JsonPrimitive("m"),
+            )
 
         val applied = apply(DayplannerHandler(), document, Mutation(DayplannerFields.day, JsonPrimitive("2026-04-09"))).applied()
 

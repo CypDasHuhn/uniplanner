@@ -10,13 +10,23 @@ import kotlinx.serialization.json.JsonElement
 private const val MAX_CHAIN = 64
 
 sealed interface MutationResult {
-    data class Applied(val document: UplDocument, val changes: List<FieldChange>) : MutationResult
+    data class Applied(
+        val document: UplDocument,
+        val changes: List<FieldChange>,
+    ) : MutationResult
 
-    data class Rejected(val reason: String) : MutationResult
+    data class Rejected(
+        val reason: String,
+    ) : MutationResult
 }
 
-class Gatekeeper(private val registry: HandlerRegistry) {
-    fun apply(document: UplDocument, request: MutationRequest): MutationResult {
+class Gatekeeper(
+    private val registry: HandlerRegistry,
+) {
+    fun apply(
+        document: UplDocument,
+        request: MutationRequest,
+    ): MutationResult {
         val fields = document.fields.toMutableMap()
         val changes = mutableListOf<FieldChange>()
         val pending = ArrayDeque(request.mutations.map { PendingMutation(request.requester, it, emptyList()) })
@@ -58,7 +68,10 @@ class Gatekeeper(private val registry: HandlerRegistry) {
         return MutationResult.Applied(UplDocument(document.id, document.kind, fields), changes)
     }
 
-    private fun validate(mutation: Mutation, writer: String): String? {
+    private fun validate(
+        mutation: Mutation,
+        writer: String,
+    ): String? {
         if (mutation.field == CoreFields.id || mutation.field == CoreFields.kind) {
             return "${mutation.field.value} is a core field"
         }
@@ -72,14 +85,23 @@ class Gatekeeper(private val registry: HandlerRegistry) {
         return null
     }
 
-    private fun describe(chain: List<Invocation>): String =
-        chain.joinToString(" -> ") { "${it.namespace}(${it.field.value})" }
+    private fun describe(chain: List<Invocation>): String = chain.joinToString(" -> ") { "${it.namespace}(${it.field.value})" }
 
-    private data class Invocation(val namespace: String, val field: FieldKey)
+    private data class Invocation(
+        val namespace: String,
+        val field: FieldKey,
+    )
 
-    private data class PendingMutation(val writer: String, val mutation: Mutation, val chain: List<Invocation>)
+    private data class PendingMutation(
+        val writer: String,
+        val mutation: Mutation,
+        val chain: List<Invocation>,
+    )
 }
 
-private class FieldView(override val id: String, private val fields: Map<FieldKey, JsonElement>) : DocumentView {
+private class FieldView(
+    override val id: String,
+    private val fields: Map<FieldKey, JsonElement>,
+) : DocumentView {
     override fun value(field: FieldKey): JsonElement? = fields[field]
 }

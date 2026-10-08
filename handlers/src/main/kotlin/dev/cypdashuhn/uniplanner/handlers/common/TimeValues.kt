@@ -14,10 +14,15 @@ object TimeValues {
 
     fun durationValue(duration: Duration): JsonElement = JsonPrimitive(formatDuration(duration))
 
-    fun endOf(start: LocalDate, duration: Duration): LocalDate? =
-        if (duration.seconds % SECONDS_PER_DAY == 0L) start.plusDays(duration.toDays()) else null
+    fun endOf(
+        start: LocalDate,
+        duration: Duration,
+    ): LocalDate? = if (duration.seconds % SECONDS_PER_DAY == 0L) start.plusDays(duration.toDays()) else null
 
-    fun durationBetween(start: LocalDate, end: LocalDate): Duration = Duration.ofDays(end.toEpochDay() - start.toEpochDay())
+    fun durationBetween(
+        start: LocalDate,
+        end: LocalDate,
+    ): Duration = Duration.ofDays(end.toEpochDay() - start.toEpochDay())
 
     private const val SECONDS_PER_DAY = 86_400L
 

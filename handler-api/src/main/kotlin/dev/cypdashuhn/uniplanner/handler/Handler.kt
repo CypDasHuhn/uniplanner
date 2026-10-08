@@ -7,5 +7,8 @@ interface Handler {
 
     fun subscribedFields(): Set<FieldKey>
 
-    fun onFieldChanged(change: FieldChange, document: DocumentView): List<Mutation>
+    fun onFieldChanged(
+        change: FieldChange,
+        document: DocumentView,
+    ): List<Mutation>
 }

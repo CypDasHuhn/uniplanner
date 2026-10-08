@@ -3,7 +3,9 @@ package dev.cypdashuhn.uniplanner.core
 import dev.cypdashuhn.uniplanner.handler.FieldKey
 import dev.cypdashuhn.uniplanner.handler.Handler
 
-class HandlerRegistry(handlers: List<Handler>) {
+class HandlerRegistry(
+    handlers: List<Handler>,
+) {
     private val handlersByNamespace = handlers.associateBy { it.namespace }
     private val owned = handlers.flatMap { handler -> handler.ownedFields().map { Declaration(it, handler.namespace) } }
     private val subscribed = handlers.flatMap { handler -> handler.subscribedFields().map { Declaration(it, handler.namespace) } }
@@ -11,7 +13,12 @@ class HandlerRegistry(handlers: List<Handler>) {
 
     init {
         require(handlersByNamespace.size == handlers.size) {
-            val duplicates = handlers.groupBy { it.namespace }.filterValues { it.size > 1 }.keys.joinToString()
+            val duplicates =
+                handlers
+                    .groupBy { it.namespace }
+                    .filterValues { it.size > 1 }
+                    .keys
+                    .joinToString()
             "duplicate handler namespace: $duplicates"
         }
         owned.forEach { first ->
@@ -27,15 +34,18 @@ class HandlerRegistry(handlers: List<Handler>) {
 
     fun ownerOf(field: FieldKey): String? = owned.firstOrNull { it.key.covers(field) }?.namespace
 
-    fun subscribersOf(field: FieldKey): List<Handler> = subscribed
-        .filter { it.key.covers(field) }
-        .map { handlersByNamespace.getValue(it.namespace) }
-        .distinctBy { it.namespace }
+    fun subscribersOf(field: FieldKey): List<Handler> =
+        subscribed
+            .filter { it.key.covers(field) }
+            .map { handlersByNamespace.getValue(it.namespace) }
+            .distinctBy { it.namespace }
 
     fun isGroupKey(field: FieldKey): Boolean = declaredKeys.any { it.value.startsWith("${field.value}.") }
 
-    private data class Declaration(val key: FieldKey, val namespace: String)
+    private data class Declaration(
+        val key: FieldKey,
+        val namespace: String,
+    )
 }
 
-private fun FieldKey.covers(other: FieldKey): Boolean =
-    this == other || other.value.startsWith("${value}.")
+private fun FieldKey.covers(other: FieldKey): Boolean = this == other || other.value.startsWith("$value.")

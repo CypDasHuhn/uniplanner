@@ -20,14 +20,17 @@ class DayplannerHandler : Handler {
 
     override fun subscribedFields(): Set<FieldKey> = setOf(Std.statusClosed, DayplannerFields.day)
 
-    override fun onFieldChanged(change: FieldChange, document: DocumentView): List<Mutation> = when (change.field) {
-        DayplannerFields.day -> clearOrder()
-        Std.statusClosed -> if (change.newValue.booleanOrNull() == true) clearPlacement() else emptyList()
-        else -> emptyList()
-    }
+    override fun onFieldChanged(
+        change: FieldChange,
+        document: DocumentView,
+    ): List<Mutation> =
+        when (change.field) {
+            DayplannerFields.day -> clearOrder()
+            Std.statusClosed -> if (change.newValue.booleanOrNull() == true) clearPlacement() else emptyList()
+            else -> emptyList()
+        }
 
     private fun clearOrder(): List<Mutation> = listOf(Mutation(DayplannerFields.order, null))
 
-    private fun clearPlacement(): List<Mutation> =
-        listOf(Mutation(DayplannerFields.day, null), Mutation(DayplannerFields.order, null))
+    private fun clearPlacement(): List<Mutation> = listOf(Mutation(DayplannerFields.day, null), Mutation(DayplannerFields.order, null))
 }

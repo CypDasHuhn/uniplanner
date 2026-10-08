@@ -23,10 +23,11 @@ class GatekeeperTest {
         val document = UplDocument("abc123", DocumentKind.TASK, emptyMap())
         val gatekeeper = Gatekeeper(HandlerRegistry(emptyList()))
 
-        val result = gatekeeper.apply(
-            document,
-            MutationRequest("kanban", listOf(Mutation(status, JsonPrimitive("in-progress")))),
-        )
+        val result =
+            gatekeeper.apply(
+                document,
+                MutationRequest("kanban", listOf(Mutation(status, JsonPrimitive("in-progress")))),
+            )
 
         val applied = assertIs<MutationResult.Applied>(result)
         assertEquals(JsonPrimitive("in-progress"), applied.document.fields[status])
@@ -39,10 +40,11 @@ class GatekeeperTest {
         val gatekeeper = Gatekeeper(HandlerRegistry(listOf(owner)))
         val document = UplDocument("abc123", DocumentKind.TASK, emptyMap())
 
-        val result = gatekeeper.apply(
-            document,
-            MutationRequest("kanban", listOf(Mutation(FieldKey("gantt.start"), JsonPrimitive("2026-04-01")))),
-        )
+        val result =
+            gatekeeper.apply(
+                document,
+                MutationRequest("kanban", listOf(Mutation(FieldKey("gantt.start"), JsonPrimitive("2026-04-01")))),
+            )
 
         assertIs<MutationResult.Rejected>(result)
     }
@@ -54,10 +56,11 @@ class GatekeeperTest {
         val gatekeeper = Gatekeeper(HandlerRegistry(listOf(kanban)))
         val document = UplDocument("abc123", DocumentKind.TASK, emptyMap())
 
-        val result = gatekeeper.apply(
-            document,
-            MutationRequest("kanban", listOf(Mutation(status, JsonPrimitive("in-progress")))),
-        )
+        val result =
+            gatekeeper.apply(
+                document,
+                MutationRequest("kanban", listOf(Mutation(status, JsonPrimitive("in-progress")))),
+            )
 
         val applied = assertIs<MutationResult.Applied>(result)
         assertEquals(JsonPrimitive("doing"), applied.document.fields[column])
@@ -66,18 +69,20 @@ class GatekeeperTest {
 
     @Test
     fun `allows a multi-step derivation by one handler`() {
-        val reactions = mapOf(
-            status to listOf(Mutation(column, JsonPrimitive("doing"))),
-            column to listOf(Mutation(other, JsonPrimitive("m"))),
-        )
+        val reactions =
+            mapOf(
+                status to listOf(Mutation(column, JsonPrimitive("doing"))),
+                column to listOf(Mutation(other, JsonPrimitive("m"))),
+            )
         val reactor = FakeHandler("kanban", owned = setOf(column, other), subscribed = setOf(status, column), reactions = reactions)
         val gatekeeper = Gatekeeper(HandlerRegistry(listOf(reactor)))
         val document = UplDocument("abc123", DocumentKind.TASK, emptyMap())
 
-        val result = gatekeeper.apply(
-            document,
-            MutationRequest("kanban", listOf(Mutation(status, JsonPrimitive("in-progress")))),
-        )
+        val result =
+            gatekeeper.apply(
+                document,
+                MutationRequest("kanban", listOf(Mutation(status, JsonPrimitive("in-progress")))),
+            )
 
         val applied = assertIs<MutationResult.Applied>(result)
         assertEquals(listOf(status, column, other), applied.changes.map { it.field })
@@ -86,19 +91,21 @@ class GatekeeperTest {
     @Test
     fun `rejects a circular handler chain`() {
         val start = FieldKey("gantt.start")
-        val reactor = FakeHandler(
-            "gantt",
-            owned = setOf(start),
-            subscribed = setOf(start),
-            reactions = mapOf(start to listOf(Mutation(start, JsonPrimitive("2026-04-02")))),
-        )
+        val reactor =
+            FakeHandler(
+                "gantt",
+                owned = setOf(start),
+                subscribed = setOf(start),
+                reactions = mapOf(start to listOf(Mutation(start, JsonPrimitive("2026-04-02")))),
+            )
         val gatekeeper = Gatekeeper(HandlerRegistry(listOf(reactor)))
         val document = UplDocument("abc123", DocumentKind.TASK, emptyMap())
 
-        val result = gatekeeper.apply(
-            document,
-            MutationRequest("gantt", listOf(Mutation(start, JsonPrimitive("2026-04-01")))),
-        )
+        val result =
+            gatekeeper.apply(
+                document,
+                MutationRequest("gantt", listOf(Mutation(start, JsonPrimitive("2026-04-01")))),
+            )
 
         assertIs<MutationResult.Rejected>(result)
     }
@@ -133,10 +140,11 @@ class GatekeeperTest {
         val gatekeeper = Gatekeeper(HandlerRegistry(listOf(owner)))
         val document = UplDocument("abc123", DocumentKind.TASK, emptyMap())
 
-        val result = gatekeeper.apply(
-            document,
-            MutationRequest("gantt", listOf(Mutation(FieldKey("std.time"), JsonPrimitive("nonsense")))),
-        )
+        val result =
+            gatekeeper.apply(
+                document,
+                MutationRequest("gantt", listOf(Mutation(FieldKey("std.time"), JsonPrimitive("nonsense")))),
+            )
 
         assertIs<MutationResult.Rejected>(result)
     }
@@ -146,10 +154,11 @@ class GatekeeperTest {
         val gatekeeper = Gatekeeper(HandlerRegistry(emptyList()))
         val document = UplDocument("abc123", DocumentKind.TASK, emptyMap())
 
-        val result = gatekeeper.apply(
-            document,
-            MutationRequest("kanban", listOf(Mutation(CoreFields.id, JsonPrimitive("other")))),
-        )
+        val result =
+            gatekeeper.apply(
+                document,
+                MutationRequest("kanban", listOf(Mutation(CoreFields.id, JsonPrimitive("other")))),
+            )
 
         assertIs<MutationResult.Rejected>(result)
     }
@@ -167,7 +176,13 @@ class GatekeeperTest {
 
     @Test
     fun `exposes current fields to handlers`() {
-        val view = FakeHandler("kanban", subscribed = setOf(status), reactions = mapOf(status to listOf(Mutation(column, JsonPrimitive("doing")))))
+        val view =
+            FakeHandler(
+                "kanban",
+                subscribed = setOf(status),
+                reactions =
+                    mapOf(status to listOf(Mutation(column, JsonPrimitive("doing")))),
+            )
         val gatekeeper = Gatekeeper(HandlerRegistry(listOf(view)))
         val document = UplDocument("abc123", DocumentKind.TASK, mapOf(column to JsonPrimitive("todo")))
 
@@ -192,7 +207,10 @@ private class FakeHandler(
 
     override fun subscribedFields(): Set<FieldKey> = subscribed
 
-    override fun onFieldChanged(change: FieldChange, document: DocumentView): List<Mutation> {
+    override fun onFieldChanged(
+        change: FieldChange,
+        document: DocumentView,
+    ): List<Mutation> {
         invocations += change.field
         seenColumn = (document.value(FieldKey("kanban.column")) as? JsonPrimitive)?.content
         return reactions[change.field].orEmpty()

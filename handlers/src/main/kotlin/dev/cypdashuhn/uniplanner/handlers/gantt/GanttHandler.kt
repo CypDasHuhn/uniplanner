@@ -15,16 +15,19 @@ object GanttFields {
 class GanttHandler : Handler {
     override val namespace = "gantt"
 
-    override fun ownedFields(): Set<FieldKey> =
-        setOf(Std.timeStart, Std.timeEnd, Std.timeDuration, GanttFields.progress)
+    override fun ownedFields(): Set<FieldKey> = setOf(Std.timeStart, Std.timeEnd, Std.timeDuration, GanttFields.progress)
 
     override fun subscribedFields(): Set<FieldKey> = setOf(Std.timeStart, Std.timeEnd, Std.timeDuration)
 
-    override fun onFieldChanged(change: FieldChange, document: DocumentView): List<Mutation> = when (change.field) {
-        Std.timeStart, Std.timeDuration -> derivedEnd(document)
-        Std.timeEnd -> derivedDuration(document)
-        else -> emptyList()
-    }
+    override fun onFieldChanged(
+        change: FieldChange,
+        document: DocumentView,
+    ): List<Mutation> =
+        when (change.field) {
+            Std.timeStart, Std.timeDuration -> derivedEnd(document)
+            Std.timeEnd -> derivedDuration(document)
+            else -> emptyList()
+        }
 
     private fun derivedEnd(document: DocumentView): List<Mutation> {
         val start = TimeValues.date(document.value(Std.timeStart)) ?: return emptyList()

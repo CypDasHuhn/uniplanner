@@ -1,4 +1,6 @@
 package dev.cypdashuhn.uniplanner.handler
 
 @JvmInline
-value class FieldKey(val value: String)
+value class FieldKey(
+    val value: String,
+)

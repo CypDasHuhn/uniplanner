@@ -17,15 +17,26 @@ fun main(args: Array<String>) {
 private fun inspect(path: Path) {
     val document = UplFile(path).read()
     println("${document.kind.name.lowercase()} ${document.id}")
-    document.fields.keys.map { it.value }.sorted().forEach(::println)
+    document.fields.keys
+        .map { it.value }
+        .sorted()
+        .forEach(::println)
 }
 
 private fun handlers() {
     HandlerRegistry(BuiltinHandlers.all())
     BuiltinHandlers.all().forEach { handler ->
         println(handler.namespace)
-        handler.ownedFields().map { it.value }.sorted().forEach { println("  owns $it") }
-        handler.subscribedFields().map { it.value }.sorted().forEach { println("  subscribes $it") }
+        handler
+            .ownedFields()
+            .map { it.value }
+            .sorted()
+            .forEach { println("  owns $it") }
+        handler
+            .subscribedFields()
+            .map { it.value }
+            .sorted()
+            .forEach { println("  subscribes $it") }
     }
 }
 

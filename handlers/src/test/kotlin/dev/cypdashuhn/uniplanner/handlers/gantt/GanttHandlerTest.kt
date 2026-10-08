@@ -22,11 +22,12 @@ class GanttHandlerTest {
 
     @Test
     fun `start change re-derives the end date`() {
-        val document = task(
-            Std.timeStart to JsonPrimitive("2026-04-01"),
-            Std.timeDuration to JsonPrimitive("P3D"),
-            Std.timeEnd to JsonPrimitive("2026-04-04"),
-        )
+        val document =
+            task(
+                Std.timeStart to JsonPrimitive("2026-04-01"),
+                Std.timeDuration to JsonPrimitive("P3D"),
+                Std.timeEnd to JsonPrimitive("2026-04-04"),
+            )
 
         val applied = apply(GanttHandler(), document, Mutation(Std.timeStart, JsonPrimitive("2026-04-10"))).applied()
 
@@ -35,10 +36,11 @@ class GanttHandlerTest {
 
     @Test
     fun `end change derives the duration`() {
-        val document = task(
-            Std.timeStart to JsonPrimitive("2026-04-01"),
-            Std.timeEnd to JsonPrimitive("2026-04-04"),
-        )
+        val document =
+            task(
+                Std.timeStart to JsonPrimitive("2026-04-01"),
+                Std.timeEnd to JsonPrimitive("2026-04-04"),
+            )
 
         val applied = apply(GanttHandler(), document, Mutation(Std.timeEnd, JsonPrimitive("2026-04-10"))).applied()
 
@@ -57,11 +59,12 @@ class GanttHandlerTest {
 
     @Test
     fun `no reaction when the derived end is unchanged`() {
-        val document = task(
-            Std.timeStart to JsonPrimitive("2026-04-01"),
-            Std.timeDuration to JsonPrimitive("P3D"),
-            Std.timeEnd to JsonPrimitive("2026-04-04"),
-        )
+        val document =
+            task(
+                Std.timeStart to JsonPrimitive("2026-04-01"),
+                Std.timeDuration to JsonPrimitive("P3D"),
+                Std.timeEnd to JsonPrimitive("2026-04-04"),
+            )
         val equivalent = JsonPrimitive("PT72H")
 
         val applied = apply(GanttHandler(), document, Mutation(Std.timeDuration, equivalent)).applied()
