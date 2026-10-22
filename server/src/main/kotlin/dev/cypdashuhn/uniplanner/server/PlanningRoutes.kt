@@ -1,14 +1,17 @@
 package dev.cypdashuhn.uniplanner.server
 
 import dev.cypdashuhn.uniplanner.auth.http.HttpAuth
+import dev.cypdashuhn.uniplanner.core.DocumentKind
 import dev.cypdashuhn.uniplanner.core.Gatekeeper
 import dev.cypdashuhn.uniplanner.core.HandlerRegistry
 import dev.cypdashuhn.uniplanner.core.MutationResult
+import dev.cypdashuhn.uniplanner.core.UplDocument
 import dev.cypdashuhn.uniplanner.core.UplFile
 import dev.cypdashuhn.uniplanner.core.UplJson
 import dev.cypdashuhn.uniplanner.core.UplRequestJson
 import dev.cypdashuhn.uniplanner.handler.FieldChange
 import dev.cypdashuhn.uniplanner.handler.MutationRequest
+import dev.cypdashuhn.uniplanner.handler.Std
 import dev.cypdashuhn.uniplanner.handlers.BuiltinHandlers
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
@@ -28,14 +31,17 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
 import java.io.IOException
+import java.nio.file.Files
 import java.nio.file.NoSuchFileException
 import java.nio.file.Path
 
@@ -47,6 +53,10 @@ fun Application.documentRoutes(httpAuth: HttpAuth, vault: Vault) {
         route("/api") {
             get("/document") {
                 call.getDocument(httpAuth, vault)
+            }
+
+            get("/tags") {
+                call.getTags(httpAuth, vault)
             }
 
             put("/document") {
@@ -85,6 +95,49 @@ private suspend fun ApplicationCall.getDocument(httpAuth: HttpAuth, vault: Vault
     respondText(document, ContentType.Application.Json)
 }
 
+private suspend fun ApplicationCall.getTags(httpAuth: HttpAuth, vault: Vault) {
+    requirePrincipal(httpAuth) ?: return
+    val directory = vaultDirectory(vault) ?: return
+
+    val tags =
+        try {
+            withContext(Dispatchers.IO) { directoryTags(directory) }
+        } catch (error: IllegalArgumentException) {
+            respondFailure(error)
+            return
+        } catch (error: IOException) {
+            respondFailure(error)
+            return
+        }
+
+    val body = buildJsonObject { put("tags", buildJsonArray { tags.forEach { add(it) } }) }
+    respondText(body.toString(), ContentType.Application.Json)
+}
+
+private fun directoryTags(directory: Path): Set<String> {
+    val tags = sortedSetOf<String>()
+    Files.list(directory).use { files ->
+        files
+            .filter { Files.isRegularFile(it) && it.fileName.toString().endsWith(".upl.json") }
+            .forEach { file -> collectTags(UplFile(file).read(), tags) }
+    }
+    return tags
+}
+
+private fun collectTags(document: UplDocument, tags: MutableSet<String>) {
+    if (document.isContainer) {
+        document.tasks.values.forEach { collectTags(it, tags) }
+        return
+    }
+    if (document.kind != DocumentKind.TASK) return
+
+    val values = document.fields[Std.tags] as? JsonArray ?: return
+    for (value in values) {
+        val tag = (value as? JsonPrimitive)?.contentOrNull?.trim()?.trimStart('#').orEmpty()
+        if (tag.isNotEmpty()) tags.add(tag)
+    }
+}
+
 private suspend fun ApplicationCall.replaceDocument(
     httpAuth: HttpAuth,
     vault: Vault,
@@ -92,7 +145,7 @@ private suspend fun ApplicationCall.replaceDocument(
     writes: Mutex,
 ) {
     requirePrincipal(httpAuth) ?: return
-    val path = vaultPath(vault) ?: return
+    val path = vaultPathForWrite(vault) ?: return
     val document =
         try {
             UplJson.read(receiveText())
@@ -103,8 +156,8 @@ private suspend fun ApplicationCall.replaceDocument(
             respondFailure(error)
             return
         }
-    if (!document.isContainer) {
-        respondFailure(IllegalArgumentException("document must be a container"))
+    if (!document.isContainer && !document.isWorkspace) {
+        respondFailure(IllegalArgumentException("document must be a container or workspace"))
         return
     }
 
@@ -181,9 +234,37 @@ private fun applyAndWrite(
     return result
 }
 
+private suspend fun ApplicationCall.vaultDirectory(vault: Vault): Path? =
+    try {
+        vault.resolveDirectory(request.queryParameters["path"])
+    } catch (error: NoSuchFileException) {
+        respond(HttpStatusCode.NotFound)
+        null
+    } catch (error: IllegalArgumentException) {
+        respondFailure(error)
+        null
+    } catch (error: IOException) {
+        respondFailure(error)
+        null
+    }
+
 private suspend fun ApplicationCall.vaultPath(vault: Vault): Path? =
     try {
         vault.resolve(request.queryParameters["path"])
+    } catch (error: NoSuchFileException) {
+        respond(HttpStatusCode.NotFound)
+        null
+    } catch (error: IllegalArgumentException) {
+        respondFailure(error)
+        null
+    } catch (error: IOException) {
+        respondFailure(error)
+        null
+    }
+
+private suspend fun ApplicationCall.vaultPathForWrite(vault: Vault): Path? =
+    try {
+        vault.resolveForWrite(request.queryParameters["path"])
     } catch (error: NoSuchFileException) {
         respond(HttpStatusCode.NotFound)
         null

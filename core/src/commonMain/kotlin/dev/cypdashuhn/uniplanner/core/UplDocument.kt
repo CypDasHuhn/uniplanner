@@ -22,6 +22,7 @@ data class UplDocument(
     override fun value(field: FieldKey): JsonElement? = fields[field]
 
     val isContainer: Boolean get() = kind == DocumentKind.CONTAINER
+    val isWorkspace: Boolean get() = kind == DocumentKind.WORKSPACE
 
     fun task(id: String): UplDocument? = tasks[id]
 }

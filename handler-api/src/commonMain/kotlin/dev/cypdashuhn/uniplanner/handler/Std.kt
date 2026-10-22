@@ -14,4 +14,6 @@ object Std {
     val relations = FieldKey("std.relations")
     val relationsParent = FieldKey("std.relations.parent")
     val relationsDependsOn = FieldKey("std.relations.depends-on")
+    val tags = FieldKey("std.tags")
+    val tagColors = FieldKey("std.tag.colors")
 }

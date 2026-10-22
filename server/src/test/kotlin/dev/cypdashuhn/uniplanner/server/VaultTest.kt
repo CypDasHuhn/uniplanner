@@ -36,6 +36,52 @@ class VaultTest {
     }
 
     @Test
+    fun `resolves directories`() {
+        val directory = Files.createDirectory(root.resolve("planner"))
+
+        assertEquals(directory.toRealPath(), vault.resolveDirectory("planner"))
+        assertEquals(root.toRealPath(), vault.resolveDirectory("."))
+    }
+
+    @Test
+    fun `rejects missing files as directories`() {
+        Files.writeString(root.resolve("week.upl.json"), "{}")
+
+        assertFailsWith<NoSuchFileException> { vault.resolveDirectory("missing") }
+        assertFailsWith<NoSuchFileException> { vault.resolveDirectory("week.upl.json") }
+        assertFailsWith<IllegalArgumentException> { vault.resolveDirectory("../outside") }
+        assertFailsWith<IllegalArgumentException> { vault.resolveDirectory(null) }
+    }
+
+    @Test
+    fun `resolves missing files for writing`() {
+        val file = root.resolve("new-week.upl.json")
+
+        assertEquals(file, vault.resolveForWrite("new-week.upl.json"))
+    }
+
+    @Test
+    fun `rejects missing directories for writing`() {
+        assertFailsWith<NoSuchFileException> { vault.resolveForWrite("missing/new-week.upl.json") }
+    }
+
+    @Test
+    fun `rejects invalid write paths`() {
+        assertFailsWith<IllegalArgumentException> { vault.resolveForWrite("../outside.upl.json") }
+        assertFailsWith<IllegalArgumentException> { vault.resolveForWrite(root.resolve("outside.upl.json").toString()) }
+        assertFailsWith<IllegalArgumentException> { vault.resolveForWrite("notes.txt") }
+        assertFailsWith<IllegalArgumentException> { vault.resolveForWrite(null) }
+    }
+
+    @Test
+    fun `rejects directories for writing`() {
+        val directory = root.resolve("folder.upl.json")
+        Files.createDirectory(directory)
+
+        assertFailsWith<NoSuchFileException> { vault.resolveForWrite("folder.upl.json") }
+    }
+
+    @Test
     fun `rejects directories`() {
         val directory = root.resolve("folder.upl.json")
         Files.createDirectory(directory)
