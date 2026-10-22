@@ -6,4 +6,4 @@ dependencyResolutionManagement {
     }
 }
 
-include("handler-api", "core", "handlers", "cli", "js-api", "web-demo")
+include("handler-api", "core", "handlers", "cli", "js-api", "web-demo", "server-auth")
