@@ -20,6 +20,7 @@ import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
+import io.ktor.server.routing.put
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import kotlinx.coroutines.Dispatchers
@@ -46,6 +47,10 @@ fun Application.documentRoutes(httpAuth: HttpAuth, vault: Vault) {
         route("/api") {
             get("/document") {
                 call.getDocument(httpAuth, vault)
+            }
+
+            put("/document") {
+                call.replaceDocument(httpAuth, vault, gatekeeper, writes)
             }
 
             post("/preview") {
@@ -78,6 +83,53 @@ private suspend fun ApplicationCall.getDocument(httpAuth: HttpAuth, vault: Vault
         }
 
     respondText(document, ContentType.Application.Json)
+}
+
+private suspend fun ApplicationCall.replaceDocument(
+    httpAuth: HttpAuth,
+    vault: Vault,
+    gatekeeper: Gatekeeper,
+    writes: Mutex,
+) {
+    requirePrincipal(httpAuth) ?: return
+    val path = vaultPath(vault) ?: return
+    val document =
+        try {
+            UplJson.read(receiveText())
+        } catch (error: IllegalArgumentException) {
+            respondFailure(error)
+            return
+        } catch (error: IOException) {
+            respondFailure(error)
+            return
+        }
+    if (!document.isContainer) {
+        respondFailure(IllegalArgumentException("document must be a container"))
+        return
+    }
+
+    val result =
+        try {
+            withContext(Dispatchers.IO) {
+                writes.withLock {
+                    val applied = gatekeeper.apply(document, MutationRequest("import", emptyList()))
+                    if (applied is MutationResult.Applied) UplFile(path).write(applied.document)
+                    applied
+                }
+            }
+        } catch (error: IllegalArgumentException) {
+            respondFailure(error)
+            return
+        } catch (error: IOException) {
+            respondFailure(error)
+            return
+        }
+
+    when (result) {
+        is MutationResult.Applied -> respondText(appliedJson(result), ContentType.Application.Json)
+        is MutationResult.Rejected ->
+            respondText(errorJson(result.reason), ContentType.Application.Json, HttpStatusCode.BadRequest)
+    }
 }
 
 private suspend fun ApplicationCall.mutate(

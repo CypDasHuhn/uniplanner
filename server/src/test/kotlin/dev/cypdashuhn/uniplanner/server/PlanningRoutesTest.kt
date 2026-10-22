@@ -6,6 +6,7 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
@@ -49,6 +50,62 @@ class PlanningRoutesTest {
                 val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
                 assertEquals("t1", body["id"]?.jsonPrimitive?.content)
                 assertEquals("Task", body["std.name"]?.jsonPrimitive?.content)
+            }
+        }
+    }
+
+    @Test
+    fun `replaces a container document`() {
+        withVault { vault ->
+            Files.writeString(vault.resolve("week.upl.json"), """{"id":"week","kind":"container","tasks":[]}""")
+            withServer(vault) {
+                val response = client.put("/api/document") {
+                    parameter("path", "week.upl.json")
+                    authorize()
+                    contentType(ContentType.Application.Json)
+                    setBody(
+                        """
+                        {
+                          "id": "week",
+                          "kind": "container",
+                          "std.name": "Imported",
+                          "tasks": [
+                            { "id": "t1", "std.name": "Imported task" }
+                          ]
+                        }
+                        """.trimIndent(),
+                    )
+                }
+
+                assertEquals(HttpStatusCode.OK, response.status)
+                val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+                assertEquals("week", body["document"]?.jsonObject?.get("id")?.jsonPrimitive?.content)
+                assertEquals(
+                    "Imported task",
+                    UplJson.read(Files.readString(vault.resolve("week.upl.json")))
+                        .tasks
+                        .getValue("t1")
+                        .fields[name]
+                        ?.jsonPrimitive
+                        ?.content,
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `rejects replacing with a task document`() {
+        withVault { vault ->
+            withServer(vault) {
+                val response = client.put("/api/document") {
+                    parameter("path", "task.upl.json")
+                    authorize()
+                    contentType(ContentType.Application.Json)
+                    setBody("""{"id":"task","kind":"task","std.name":"Task"}""")
+                }
+
+                assertEquals(HttpStatusCode.BadRequest, response.status)
+                assertEquals("Task", storedName(vault))
             }
         }
     }

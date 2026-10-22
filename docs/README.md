@@ -24,7 +24,7 @@ Containers hold multiple task documents in one file. A mutation targets a task b
 
 `server` is the first Ktor host. It exposes `/health`, `/auth/login`, `/auth/logout`, and `/auth/me`; the static token comes from `UPL_TOKEN`, with `UPL_PORT`, `UPL_COOKIE_NAME`, `UPL_COOKIE_SECURE`, `UPL_SESSION_MINUTES`, and `UPL_STATIC` optional. `UPL_STATIC` points at a built SPA directory containing `index.html`; its client routes fall back to that page while `/api` and `/auth` stay server-owned.
 
-The planning API is `/api/document`, `/api/preview`, and `/api/mutation`, all relative to `UPL_VAULT`. Paths must stay inside the vault and end in `.upl.json`; mutations run through the Core gatekeeper and are serialized in-process before the atomic write.
+The planning API is `GET`/`PUT /api/document`, `/api/preview`, and `/api/mutation`, all relative to `UPL_VAULT`. Paths must stay inside the vault and end in `.upl.json`; mutations and document replacement run through the Core gatekeeper and are serialized in-process before the atomic write.
 
 Time fields are ISO instants stored in UTC; gantt still accepts date-only values for whole-day plans and treats them as UTC
 start-of-day when paired with an instant.
