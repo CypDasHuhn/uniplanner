@@ -30,17 +30,17 @@ class GanttHandler : Handler {
         }
 
     private fun derivedEnd(document: DocumentView): List<Mutation> {
-        val start = TimeValues.date(document.value(Std.timeStart)) ?: return emptyList()
+        val start = TimeValues.moment(document.value(Std.timeStart)) ?: return emptyList()
         val duration = TimeValues.duration(document.value(Std.timeDuration)) ?: return emptyList()
         val end = TimeValues.endOf(start, duration) ?: return emptyList()
-        if (TimeValues.date(document.value(Std.timeEnd)) == end) return emptyList()
-        return listOf(Mutation(Std.timeEnd, TimeValues.dateValue(end)))
+        if (TimeValues.sameMoment(TimeValues.moment(document.value(Std.timeEnd)), end)) return emptyList()
+        return listOf(Mutation(Std.timeEnd, TimeValues.momentValue(end)))
     }
 
     private fun derivedDuration(document: DocumentView): List<Mutation> {
-        val start = TimeValues.date(document.value(Std.timeStart)) ?: return emptyList()
-        val end = TimeValues.date(document.value(Std.timeEnd)) ?: return emptyList()
-        val duration = TimeValues.durationBetween(start, end)
+        val start = TimeValues.moment(document.value(Std.timeStart)) ?: return emptyList()
+        val end = TimeValues.moment(document.value(Std.timeEnd)) ?: return emptyList()
+        val duration = TimeValues.durationBetween(start, end) ?: return emptyList()
         if (TimeValues.duration(document.value(Std.timeDuration)) == duration) return emptyList()
         return listOf(Mutation(Std.timeDuration, TimeValues.durationValue(duration)))
     }

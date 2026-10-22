@@ -74,6 +74,73 @@ class GanttHandlerTest {
     }
 
     @Test
+    fun `duration change derives a utc end for instants`() {
+        val document =
+            task(
+                Std.timeStart to JsonPrimitive("2026-04-01T08:00:00Z"),
+                Std.timeDuration to JsonPrimitive("PT2H"),
+            )
+
+        val applied = apply(GanttHandler(), document, Mutation(Std.timeDuration, JsonPrimitive("PT3H"))).applied()
+
+        assertEquals(JsonPrimitive("2026-04-01T11:00:00Z"), applied.fields[Std.timeEnd])
+    }
+
+    @Test
+    fun `end change derives a sub-day duration`() {
+        val document =
+            task(
+                Std.timeStart to JsonPrimitive("2026-04-01T08:00:00Z"),
+                Std.timeEnd to JsonPrimitive("2026-04-01T10:30:00Z"),
+            )
+
+        val applied = apply(GanttHandler(), document, Mutation(Std.timeEnd, JsonPrimitive("2026-04-01T11:00:00Z"))).applied()
+
+        assertEquals(JsonPrimitive("PT3H"), applied.fields[Std.timeDuration])
+    }
+
+    @Test
+    fun `derives duration from a date start and instant end`() {
+        val document =
+            task(
+                Std.timeStart to JsonPrimitive("2026-04-01"),
+                Std.timeEnd to JsonPrimitive("2026-04-02T00:00:00Z"),
+                Std.timeDuration to JsonPrimitive("P1D"),
+            )
+
+        val applied = apply(GanttHandler(), document, Mutation(Std.timeEnd, JsonPrimitive("2026-04-03T00:00:00Z"))).applied()
+
+        assertEquals(JsonPrimitive("P2D"), applied.fields[Std.timeDuration])
+    }
+
+    @Test
+    fun `derives duration from an instant start and date end`() {
+        val document =
+            task(
+                Std.timeStart to JsonPrimitive("2026-04-01T00:00:00Z"),
+                Std.timeEnd to JsonPrimitive("2026-04-02"),
+                Std.timeDuration to JsonPrimitive("P1D"),
+            )
+
+        val applied = apply(GanttHandler(), document, Mutation(Std.timeEnd, JsonPrimitive("2026-04-04"))).applied()
+
+        assertEquals(JsonPrimitive("P3D"), applied.fields[Std.timeDuration])
+    }
+
+    @Test
+    fun `normalizes offset inputs to utc when deriving the end`() {
+        val document =
+            task(
+                Std.timeStart to JsonPrimitive("2026-04-01T08:00:00Z"),
+                Std.timeDuration to JsonPrimitive("PT2H"),
+            )
+
+        val applied = apply(GanttHandler(), document, Mutation(Std.timeStart, JsonPrimitive("2026-04-01T10:00:00+02:00"))).applied()
+
+        assertEquals(JsonPrimitive("2026-04-01T10:00:00Z"), applied.fields[Std.timeEnd])
+    }
+
+    @Test
     fun `keeps progress as a plain owned field`() {
         val document = task()
 
