@@ -1,11 +1,13 @@
 package dev.cypdashuhn.uniplanner.server
 
+import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ServerConfigTest {
@@ -47,6 +49,34 @@ class ServerConfigTest {
         assertEquals("upl_session", config.cookie.name)
         assertTrue(config.cookie.secure)
         assertEquals(Duration.ofHours(12), config.sessionTtl)
+        assertNull(config.staticRoot)
+    }
+
+    @Test
+    fun `reads static root`() {
+        val root = Files.createTempDirectory("upl-static")
+        Files.writeString(root.resolve("index.html"), "<html></html>")
+
+        val config = ServerConfig.fromEnvironment(env(mapOf("UPL_STATIC" to root.toString())))
+
+        assertEquals(root.toAbsolutePath().normalize(), config.staticRoot)
+    }
+
+    @Test
+    fun `rejects invalid static roots`() {
+        assertFailsWith<IllegalArgumentException> {
+            ServerConfig.fromEnvironment(env(mapOf("UPL_STATIC" to "/missing")))
+        }
+
+        val empty = Files.createTempDirectory("upl-static-empty")
+        assertFailsWith<IllegalArgumentException> {
+            ServerConfig.fromEnvironment(env(mapOf("UPL_STATIC" to empty.toString())))
+        }
+
+        val file = Files.createTempFile("upl-static-file", ".html")
+        assertFailsWith<IllegalArgumentException> {
+            ServerConfig.fromEnvironment(env(mapOf("UPL_STATIC" to file.toString())))
+        }
     }
 
     @Test

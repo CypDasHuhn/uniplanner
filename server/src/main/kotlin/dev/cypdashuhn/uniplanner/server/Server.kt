@@ -24,4 +24,5 @@ fun Application.module(config: ServerConfig) {
     )
     authRoutes(httpAuth)
     documentRoutes(httpAuth, Vault(config.vault))
+    config.staticRoot?.let { staticRoutes(it) }
 }

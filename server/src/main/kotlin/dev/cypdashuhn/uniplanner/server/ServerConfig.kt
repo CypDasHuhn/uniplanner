@@ -14,10 +14,11 @@ class ServerConfig(
     val cookie: SessionCookie,
     val sessionTtl: Duration,
     val vault: Path,
+    val staticRoot: Path? = null,
 ) {
     override fun toString(): String =
         "ServerConfig(host=$host, port=$port, principal=${principal.id}, cookie=${cookie.name}, " +
-            "sessionTtl=$sessionTtl, vault=$vault)"
+            "sessionTtl=$sessionTtl, vault=$vault, staticRoot=$staticRoot)"
 
     companion object {
         private const val DEFAULT_HOST = "0.0.0.0"
@@ -36,6 +37,12 @@ class ServerConfig(
             val vault = Path.of(env.required("UPL_VAULT")).toAbsolutePath().normalize()
             require(Files.isDirectory(vault)) { "UPL_VAULT must be a directory" }
 
+            val staticRoot =
+                env.valueOrNull("UPL_STATIC")?.let { Path.of(it).toAbsolutePath().normalize() }?.also { root ->
+                    require(Files.isDirectory(root)) { "UPL_STATIC must be a directory" }
+                    require(Files.isRegularFile(root.resolve("index.html"))) { "UPL_STATIC must contain index.html" }
+                }
+
             return ServerConfig(
                 host = env.valueOr("UPL_HOST", DEFAULT_HOST),
                 port = port,
@@ -47,6 +54,7 @@ class ServerConfig(
                 ),
                 sessionTtl = Duration.ofMinutes(sessionMinutes),
                 vault = vault,
+                staticRoot = staticRoot,
             )
         }
     }

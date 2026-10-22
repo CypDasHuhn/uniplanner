@@ -12,6 +12,7 @@ internal const val TEST_TOKEN = "test-token-0123456789abcdef0123456789abcdef"
 
 internal fun withServer(
     vault: Path = Files.createTempDirectory("upl-server-test"),
+    staticRoot: Path? = null,
     block: suspend ApplicationTestBuilder.() -> Unit,
 ) {
     testApplication {
@@ -25,6 +26,7 @@ internal fun withServer(
                     cookie = SessionCookie(secure = false),
                     sessionTtl = Duration.ofHours(12),
                     vault = vault,
+                    staticRoot = staticRoot,
                 ),
             )
         }
