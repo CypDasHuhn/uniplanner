@@ -1,7 +1,7 @@
 ---
 description: Writes and maintains planning artifacts in docs/ for UniPlanner - tickets, plans and module documentation focused on scope and relations between modules.
 mode: subagent
-model: deepseek/deepseek-flash
+model: opencode/deepseek-v4.1-flash-free
 variant: low
 temperature: 0.3
 permission:

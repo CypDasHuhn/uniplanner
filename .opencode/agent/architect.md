@@ -1,7 +1,7 @@
 ---
 description: Architecture brain for UniPlanner, the view-agnostic planning protocol (Kotlin/JVM at this repo). Use for schema design, module boundaries, handler protocol decisions, tradeoff analysis and reviewing structure before implementation.
 mode: subagent
-model: deepseek/deepseek-flash
+model: opencode/deepseek-v4.1-flash-free
 variant: max
 temperature: 0.1
 permission:

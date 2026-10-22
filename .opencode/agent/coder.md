@@ -1,7 +1,7 @@
 ---
 description: Implements scoped tickets in the UniPlanner Kotlin/JVM project. Use for code changes, refactors and tests with clear acceptance criteria.
 mode: subagent
-model: deepseek/deepseek-flash
+model: opencode/deepseek-v4.1-flash-free
 variant: high
 temperature: 0.2
 ---

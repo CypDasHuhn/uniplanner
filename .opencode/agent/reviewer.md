@@ -1,7 +1,7 @@
 ---
 description: Correctness reviewer for UniPlanner tickets. Hunts logic, state, data and contract bugs in one ticket's changes and writes exactly one report file. Never edits source.
 mode: subagent
-model: deepseek/deepseek-flash
+model: opencode/deepseek-v4.1-flash-free
 variant: max
 temperature: 0.1
 permission:
