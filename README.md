@@ -25,7 +25,7 @@ View-agnostic, open planning protocol for tasks and projects. Documents are `.up
 ```
 ./gradlew build
 ./gradlew :cli:run --args="inspect path/to/task.upl.json"
-UPL_TOKEN=change-me UPL_VAULT=/path/to/vault UPL_COOKIE_SECURE=false ./gradlew :server:run
+UPL_TOKEN=change-me UPL_VAULT=/path/to/vault UPL_COOKIE_SECURE=false UPL_STATIC=/path/to/dist ./gradlew :server:run
 ```
 
 ## License

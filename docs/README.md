@@ -22,7 +22,7 @@ Containers hold multiple task documents in one file. A mutation targets a task b
 
 `server-auth` provides the server-side auth primitives: static bearer tokens mapped to principals, hashed token storage, expiring in-memory sessions, and framework-agnostic HTTP header/cookie helpers for login, session auth, and logout.
 
-`server` is the first Ktor host. It exposes `/health`, `/auth/login`, `/auth/logout`, and `/auth/me`; the static token comes from `UPL_TOKEN`, with `UPL_PORT`, `UPL_COOKIE_NAME`, `UPL_COOKIE_SECURE`, and `UPL_SESSION_MINUTES` optional.
+`server` is the first Ktor host. It exposes `/health`, `/auth/login`, `/auth/logout`, and `/auth/me`; the static token comes from `UPL_TOKEN`, with `UPL_PORT`, `UPL_COOKIE_NAME`, `UPL_COOKIE_SECURE`, `UPL_SESSION_MINUTES`, and `UPL_STATIC` optional. `UPL_STATIC` points at a built SPA directory containing `index.html`; its client routes fall back to that page while `/api` and `/auth` stay server-owned.
 
 The planning API is `/api/document`, `/api/preview`, and `/api/mutation`, all relative to `UPL_VAULT`. Paths must stay inside the vault and end in `.upl.json`; mutations run through the Core gatekeeper and are serialized in-process before the atomic write.
 
