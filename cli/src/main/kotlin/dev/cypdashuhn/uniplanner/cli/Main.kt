@@ -1,6 +1,7 @@
 package dev.cypdashuhn.uniplanner.cli
 
 import dev.cypdashuhn.uniplanner.core.HandlerRegistry
+import dev.cypdashuhn.uniplanner.core.UplDocument
 import dev.cypdashuhn.uniplanner.core.UplFile
 import dev.cypdashuhn.uniplanner.handlers.BuiltinHandlers
 import java.nio.file.Path
@@ -15,12 +16,19 @@ fun main(args: Array<String>) {
 }
 
 private fun inspect(path: Path) {
-    val document = UplFile(path).read()
-    println("${document.kind.name.lowercase()} ${document.id}")
+    printDocument(UplFile(path).read(), "")
+}
+
+private fun printDocument(
+    document: UplDocument,
+    indent: String,
+) {
+    println("$indent${document.kind.name.lowercase()} ${document.id}")
     document.fields.keys
         .map { it.value }
         .sorted()
-        .forEach(::println)
+        .forEach { println("$indent  $it") }
+    document.tasks.values.forEach { printDocument(it, "$indent  ") }
 }
 
 private fun handlers() {

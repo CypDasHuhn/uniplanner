@@ -28,6 +28,43 @@ format, left side: semantics).
 }
 ```
 
+### Containers
+
+A single `.upl.json` can hold many tasks. The container has its own id and
+fields; each child task keeps the normal task shape and is addressed by id:
+
+```json
+{
+  "id": "week_01",
+  "kind": "container",
+  "std.name": "Week 16",
+  "tasks": [
+    { "id": "t1", "std.name": "Fix login bug", "std.time.start": "2026-04-01T08:00:00Z" },
+    { "id": "t2", "std.name": "Review PR", "std.time.start": "2026-04-01T10:00:00Z" }
+  ]
+}
+```
+
+Mutations carry a `target` task id. A request can create and remove tasks
+alongside field mutations; the whole request still commits atomically. Reading
+a `tasks` object keyed by id is also accepted.
+
+```json
+{
+  "requester": "gantt",
+  "mutations": [
+    { "field": "std.time.start", "target": "t1", "value": "2026-04-02T09:00:00Z" }
+  ],
+  "createTasks": [
+    { "id": "t3", "fields": { "std.name": "Write tests", "std.time.duration": "PT1H" } }
+  ],
+  "removeTasks": ["t2"]
+}
+```
+
+`createTasks` uses a nested `fields` object; the flat form is also accepted.
+`UplRequestJson` is the shared parser behind the JS API. `id`, `kind` and `tasks` are structural keys, not fields.
+
 ### Field Hierarchy
 
 | Level              | Description                           | Example                      |
