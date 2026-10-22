@@ -12,14 +12,20 @@ View-agnostic, open planning protocol for tasks and projects. Documents are `.up
 | Module | Responsibility |
 |---|---|
 | `handler-api` | handler SPI: field keys, mutations, changes, the `Handler` interface |
-| `core` | `.upl.json` storage, handler registry, mutation gatekeeper, JVM handler loading |
+| `core` | `.upl.json` storage (single documents and containers), handler registry, mutation gatekeeper, JVM handler loading |
+| `handlers` | built-in kanban, dayplanner and gantt handlers |
 | `cli` | Core process entry point |
+| `js-api` | stateless browser API: `applyMutation`/`previewMutation` over JSON strings |
+| `web-demo` | browser spike for the mutation gatekeeper |
+| `server-auth` | static server-side token auth, principals, sessions, and HTTP cookie helpers |
+| `server` | Ktor auth/session and planning API host for the hosted planner |
 
 ## Build
 
 ```
 ./gradlew build
 ./gradlew :cli:run --args="inspect path/to/task.upl.json"
+UPL_TOKEN=change-me UPL_VAULT=/path/to/vault UPL_COOKIE_SECURE=false ./gradlew :server:run
 ```
 
 ## License
