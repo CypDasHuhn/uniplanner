@@ -24,7 +24,9 @@ Containers hold multiple task documents in one file. A mutation targets a task b
 
 `server` is the first Ktor host. It exposes `/health`, `/auth/login`, `/auth/logout`, and `/auth/me`; the static token comes from `UPL_TOKEN`, with `UPL_PORT`, `UPL_COOKIE_NAME`, `UPL_COOKIE_SECURE`, `UPL_SESSION_MINUTES`, and `UPL_STATIC` optional. `UPL_STATIC` points at a built SPA directory containing `index.html`; its client routes fall back to that page while `/api` and `/auth` stay server-owned.
 
-The planning API is `GET`/`PUT /api/document`, `/api/preview`, and `/api/mutation`, all relative to `UPL_VAULT`. Paths must stay inside the vault and end in `.upl.json`; `PUT` creates a missing container document when its parent directory exists. Mutations and document replacement run through the Core gatekeeper and are serialized in-process before the atomic write.
+The planning API is `GET`/`PUT /api/document`, `GET /api/tags`, `/api/preview`, and `/api/mutation`, all relative to `UPL_VAULT`. Paths must stay inside the vault and end in `.upl.json`; `PUT` creates a missing container or workspace document when its parent directory exists. `GET /api/tags` returns the normalized tag union for a directory. Mutations and document replacement run through the Core gatekeeper and are serialized in-process before the atomic write.
+
+Writes are appended to a daily JSONL audit stream at `${UPL_VAULT}/.upl-history/YYYY-MM-DD.jsonl`. `UPL_HISTORY_ENABLED` defaults to `true`; `UPL_HISTORY_DIR`, `UPL_HISTORY_TIME_ZONE`, and `UPL_HISTORY_RETENTION_DAYS` control the directory, day boundary, and cleanup window. `GET /api/history/days` and `GET /api/history?date=&path=&status=&op=&requester=&limit=&before=` expose the log.
 
 Time fields are ISO instants stored in UTC; gantt still accepts date-only values for whole-day plans and treats them as UTC
 start-of-day when paired with an instant.
