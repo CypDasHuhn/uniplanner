@@ -2,9 +2,12 @@ package dev.cypdashuhn.uniplanner.server
 
 import dev.cypdashuhn.uniplanner.auth.AuthPrincipal
 import dev.cypdashuhn.uniplanner.auth.http.SessionCookie
+import dev.cypdashuhn.uniplanner.server.history.HistoryConfig
 import java.nio.file.Files
 import java.nio.file.Path
+import java.time.DateTimeException
 import java.time.Duration
+import java.time.ZoneId
 
 class ServerConfig(
     val host: String,
@@ -15,6 +18,7 @@ class ServerConfig(
     val sessionTtl: Duration,
     val vault: Path,
     val staticRoot: Path? = null,
+    val history: HistoryConfig = HistoryConfig.defaults(vault),
 ) {
     override fun toString(): String =
         "ServerConfig(host=$host, port=$port, principal=${principal.id}, cookie=${cookie.name}, " +
@@ -43,6 +47,8 @@ class ServerConfig(
                     require(Files.isRegularFile(root.resolve("index.html"))) { "UPL_STATIC must contain index.html" }
                 }
 
+            val history = historyConfig(env, vault)
+
             return ServerConfig(
                 host = env.valueOr("UPL_HOST", DEFAULT_HOST),
                 port = port,
@@ -55,10 +61,49 @@ class ServerConfig(
                 sessionTtl = Duration.ofMinutes(sessionMinutes),
                 vault = vault,
                 staticRoot = staticRoot,
+                history = history,
             )
         }
     }
 }
+
+private fun historyConfig(
+    env: Map<String, String>,
+    vault: Path,
+): HistoryConfig {
+    val directory = historyDirectory(vault, env.valueOr("UPL_HISTORY_DIR", HistoryConfig.DEFAULT_DIRECTORY))
+    val retentionDays = env.longOr("UPL_HISTORY_RETENTION_DAYS", HistoryConfig.DEFAULT_RETENTION_DAYS)
+    require(retentionDays >= 0) { "UPL_HISTORY_RETENTION_DAYS must not be negative" }
+
+    return HistoryConfig(
+        enabled = env.flagOr("UPL_HISTORY_ENABLED", true),
+        directory = directory,
+        timeZone = historyTimeZone(env.valueOr("UPL_HISTORY_TIME_ZONE", HistoryConfig.DEFAULT_TIME_ZONE)),
+        retentionDays = retentionDays,
+    )
+}
+
+private fun historyDirectory(
+    vault: Path,
+    raw: String,
+): Path {
+    val requested = Path.of(raw)
+    val directory =
+        if (requested.isAbsolute) {
+            requested.normalize()
+        } else {
+            vault.resolve(requested).normalize()
+        }
+    require(directory.startsWith(vault)) { "UPL_HISTORY_DIR must stay inside the vault" }
+    return directory
+}
+
+private fun historyTimeZone(raw: String): ZoneId =
+    try {
+        ZoneId.of(raw)
+    } catch (error: DateTimeException) {
+        throw IllegalArgumentException("UPL_HISTORY_TIME_ZONE must be a valid IANA zone id", error)
+    }
 
 private fun Map<String, String>.required(name: String): String =
     valueOrNull(name) ?: error("$name is required")

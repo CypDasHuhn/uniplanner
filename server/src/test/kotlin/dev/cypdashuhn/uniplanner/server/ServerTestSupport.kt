@@ -2,6 +2,7 @@ package dev.cypdashuhn.uniplanner.server
 
 import dev.cypdashuhn.uniplanner.auth.AuthPrincipal
 import dev.cypdashuhn.uniplanner.auth.http.SessionCookie
+import dev.cypdashuhn.uniplanner.server.history.HistoryConfig
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import java.nio.file.Files
@@ -13,6 +14,7 @@ internal const val TEST_TOKEN = "test-token-0123456789abcdef0123456789abcdef"
 internal fun withServer(
     vault: Path = Files.createTempDirectory("upl-server-test"),
     staticRoot: Path? = null,
+    history: HistoryConfig = HistoryConfig.defaults(vault),
     block: suspend ApplicationTestBuilder.() -> Unit,
 ) {
     testApplication {
@@ -27,6 +29,7 @@ internal fun withServer(
                     sessionTtl = Duration.ofHours(12),
                     vault = vault,
                     staticRoot = staticRoot,
+                    history = history,
                 ),
             )
         }

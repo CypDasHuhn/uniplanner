@@ -5,7 +5,7 @@ import java.nio.file.NoSuchFileException
 import java.nio.file.Path
 
 class Vault(root: Path) {
-    private val root = root.toRealPath()
+    val root: Path = root.toRealPath()
 
     fun resolve(relative: String?): Path {
         val candidate = requestedPath(relative)

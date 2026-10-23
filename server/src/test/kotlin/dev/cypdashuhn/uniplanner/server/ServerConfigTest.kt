@@ -3,6 +3,7 @@ package dev.cypdashuhn.uniplanner.server
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
+import java.time.ZoneId
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -50,6 +51,63 @@ class ServerConfigTest {
         assertTrue(config.cookie.secure)
         assertEquals(Duration.ofHours(12), config.sessionTtl)
         assertNull(config.staticRoot)
+        assertTrue(config.history.enabled)
+        assertEquals(Path.of(vault).resolve(".upl-history").toAbsolutePath().normalize(), config.history.directory)
+        assertEquals(ZoneId.of("UTC"), config.history.timeZone)
+        assertEquals(90, config.history.retentionDays)
+    }
+
+    @Test
+    fun `reads history configuration`() {
+        val config =
+            ServerConfig.fromEnvironment(
+                env(
+                    mapOf(
+                        "UPL_HISTORY_ENABLED" to "false",
+                        "UPL_HISTORY_DIR" to "audit/history",
+                        "UPL_HISTORY_TIME_ZONE" to "Europe/Berlin",
+                        "UPL_HISTORY_RETENTION_DAYS" to "0",
+                    ),
+                ),
+            )
+
+        assertFalse(config.history.enabled)
+        assertEquals(Path.of(vault).resolve("audit/history").toAbsolutePath().normalize(), config.history.directory)
+        assertEquals(ZoneId.of("Europe/Berlin"), config.history.timeZone)
+        assertEquals(0, config.history.retentionDays)
+    }
+
+    @Test
+    fun `rejects invalid history configuration`() {
+        assertFailsWith<IllegalArgumentException> {
+            ServerConfig.fromEnvironment(env(mapOf("UPL_HISTORY_ENABLED" to "yes")))
+        }
+        assertFailsWith<IllegalArgumentException> {
+            ServerConfig.fromEnvironment(env(mapOf("UPL_HISTORY_RETENTION_DAYS" to "-1")))
+        }
+        assertFailsWith<IllegalArgumentException> {
+            ServerConfig.fromEnvironment(env(mapOf("UPL_HISTORY_RETENTION_DAYS" to "later")))
+        }
+        assertFailsWith<IllegalArgumentException> {
+            ServerConfig.fromEnvironment(env(mapOf("UPL_HISTORY_TIME_ZONE" to "Mars/Olympus")))
+        }
+        assertFailsWith<IllegalArgumentException> {
+            ServerConfig.fromEnvironment(env(mapOf("UPL_HISTORY_DIR" to "../outside")))
+        }
+        assertFailsWith<IllegalArgumentException> {
+            ServerConfig.fromEnvironment(
+                env(mapOf("UPL_HISTORY_DIR" to Path.of(vault).resolveSibling("outside-history").toString())),
+            )
+        }
+    }
+
+    @Test
+    fun `accepts an absolute history directory inside the vault`() {
+        val directory = Path.of(vault).resolve("custom-history")
+
+        val config = ServerConfig.fromEnvironment(env(mapOf("UPL_HISTORY_DIR" to directory.toString())))
+
+        assertEquals(directory.toAbsolutePath().normalize(), config.history.directory)
     }
 
     @Test

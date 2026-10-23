@@ -4,6 +4,8 @@ import dev.cypdashuhn.uniplanner.auth.SessionStore
 import dev.cypdashuhn.uniplanner.auth.StaticToken
 import dev.cypdashuhn.uniplanner.auth.StaticTokenAuthenticator
 import dev.cypdashuhn.uniplanner.auth.http.HttpAuth
+import dev.cypdashuhn.uniplanner.server.history.HistoryStore
+import dev.cypdashuhn.uniplanner.server.history.historyRoutes
 import io.ktor.server.application.Application
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
@@ -16,13 +18,17 @@ fun main() {
 }
 
 fun Application.module(config: ServerConfig) {
-    val httpAuth = HttpAuth(
-        authenticator = StaticTokenAuthenticator(listOf(StaticToken.fromRaw(config.token, config.principal))),
-        sessions = SessionStore(),
-        cookie = config.cookie,
-        sessionTtl = config.sessionTtl,
-    )
+    val httpAuth =
+        HttpAuth(
+            authenticator = StaticTokenAuthenticator(listOf(StaticToken.fromRaw(config.token, config.principal))),
+            sessions = SessionStore(),
+            cookie = config.cookie,
+            sessionTtl = config.sessionTtl,
+        )
+    val vault = Vault(config.vault)
+    val history = HistoryStore(vault.root, config.history)
     authRoutes(httpAuth)
-    documentRoutes(httpAuth, Vault(config.vault))
+    if (history.config.enabled) historyRoutes(httpAuth, history)
+    documentRoutes(httpAuth, vault, history)
     config.staticRoot?.let { staticRoutes(it) }
 }

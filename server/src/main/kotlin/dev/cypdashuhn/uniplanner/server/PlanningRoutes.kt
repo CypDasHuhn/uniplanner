@@ -13,6 +13,7 @@ import dev.cypdashuhn.uniplanner.handler.FieldChange
 import dev.cypdashuhn.uniplanner.handler.MutationRequest
 import dev.cypdashuhn.uniplanner.handler.Std
 import dev.cypdashuhn.uniplanner.handlers.BuiltinHandlers
+import dev.cypdashuhn.uniplanner.server.history.HistoryStore
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
@@ -40,12 +41,19 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
+import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
 import java.nio.file.Path
 
-fun Application.documentRoutes(httpAuth: HttpAuth, vault: Vault) {
+private val historyLog = LoggerFactory.getLogger("dev.cypdashuhn.uniplanner.server.PlanningRoutes")
+
+fun Application.documentRoutes(
+    httpAuth: HttpAuth,
+    vault: Vault,
+    history: HistoryStore,
+) {
     val gatekeeper = Gatekeeper(HandlerRegistry(BuiltinHandlers.all()))
     val writes = Mutex()
 
@@ -60,15 +68,15 @@ fun Application.documentRoutes(httpAuth: HttpAuth, vault: Vault) {
             }
 
             put("/document") {
-                call.replaceDocument(httpAuth, vault, gatekeeper, writes)
+                call.replaceDocument(httpAuth, vault, gatekeeper, writes, history)
             }
 
             post("/preview") {
-                call.mutate(httpAuth, vault, gatekeeper, writes, write = false)
+                call.mutate(httpAuth, vault, gatekeeper, writes, history, write = false)
             }
 
             post("/mutation") {
-                call.mutate(httpAuth, vault, gatekeeper, writes, write = true)
+                call.mutate(httpAuth, vault, gatekeeper, writes, history, write = true)
             }
         }
     }
@@ -143,8 +151,9 @@ private suspend fun ApplicationCall.replaceDocument(
     vault: Vault,
     gatekeeper: Gatekeeper,
     writes: Mutex,
+    history: HistoryStore,
 ) {
-    requirePrincipal(httpAuth) ?: return
+    val principal = requirePrincipal(httpAuth) ?: return
     val path = vaultPathForWrite(vault) ?: return
     val document =
         try {
@@ -165,8 +174,13 @@ private suspend fun ApplicationCall.replaceDocument(
         try {
             withContext(Dispatchers.IO) {
                 writes.withLock {
-                    val applied = gatekeeper.apply(document, MutationRequest("import", emptyList()))
-                    if (applied is MutationResult.Applied) UplFile(path).write(applied.document)
+                    val before = readBeforeReplacement(path)
+                    val request = MutationRequest("import", emptyList())
+                    val applied = gatekeeper.apply(document, request)
+                    if (applied is MutationResult.Applied) {
+                        UplFile(path).write(applied.document)
+                        history.recordReplace(path, principal.id, before, applied.document, request)
+                    }
                     applied
                 }
             }
@@ -190,9 +204,10 @@ private suspend fun ApplicationCall.mutate(
     vault: Vault,
     gatekeeper: Gatekeeper,
     writes: Mutex,
+    history: HistoryStore,
     write: Boolean,
 ) {
-    requirePrincipal(httpAuth) ?: return
+    val principal = requirePrincipal(httpAuth) ?: return
     val path = vaultPath(vault) ?: return
     val request = mutationRequest() ?: return
 
@@ -200,7 +215,7 @@ private suspend fun ApplicationCall.mutate(
         try {
             withContext(Dispatchers.IO) {
                 if (write) {
-                    writes.withLock { applyAndWrite(path, request, gatekeeper) }
+                    writes.withLock { applyAndWrite(path, request, gatekeeper, history, principal.id) }
                 } else {
                     gatekeeper.apply(UplFile(path).read(), request)
                 }
@@ -223,14 +238,31 @@ private suspend fun ApplicationCall.mutate(
     }
 }
 
+private fun readBeforeReplacement(path: Path): UplDocument? {
+    if (!Files.isRegularFile(path)) return null
+
+    return try {
+        UplFile(path).read()
+    } catch (error: IllegalArgumentException) {
+        historyLog.warn("could not read document before replacement: $path", error)
+        null
+    } catch (error: IOException) {
+        historyLog.warn("could not read document before replacement: $path", error)
+        null
+    }
+}
+
 private fun applyAndWrite(
     path: Path,
     request: MutationRequest,
     gatekeeper: Gatekeeper,
+    history: HistoryStore,
+    principal: String,
 ): MutationResult {
-    val document = UplFile(path).read()
-    val result = gatekeeper.apply(document, request)
+    val before = UplFile(path).read()
+    val result = gatekeeper.apply(before, request)
     if (result is MutationResult.Applied) UplFile(path).write(result.document)
+    history.recordMutation(path, principal, before, request, result)
     return result
 }
 
